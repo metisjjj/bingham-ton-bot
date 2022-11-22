@@ -21,9 +21,5 @@ for comment in subreddit.stream.comments():
 	if str(comment.id) + '\n' not in IDs:
 		if re.search("binghampton", comment.body, re.IGNORECASE):
 			comment.reply(mdGentleReminder)
-			print("Bot replying to: ", comment.body)
-		else:
-			print("Bot NOT replying to: ", comment.id)
-		f.write(comment.id + '\n')
 
 f.close()
