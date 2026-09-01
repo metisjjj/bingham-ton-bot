@@ -37,3 +37,19 @@ If the connection to Reddit drops, it logs a warning and retries after a
 short delay rather than exiting. To run it unattended, use a process
 supervisor (systemd, supervisord, a Docker restart policy, etc.) as a
 second layer of restart protection.
+
+## Misspelling survey (read-only)
+
+`misspelling-survey.py` uses the same `praw.ini` credentials to watch
+r/all for the same misspelling, purely for measurement — it never
+replies. Each sighting (subreddit, permalink, timestamp, a short text
+snippet around the match) is logged to `misspelling-sightings.sqlite3`
+(gitignored).
+
+```
+python misspelling-survey.py            # run the collector
+python misspelling-survey.py --report   # print counts by subreddit
+```
+
+Let it run for a while, then use `--report` to see which subreddits the
+misspelling shows up in most.

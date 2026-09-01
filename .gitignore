@@ -1,5 +1,6 @@
 praw.ini
 ids-of-responded-to-posts.txt
 responded-to-posts.sqlite3
+misspelling-sightings.sqlite3
 __pycache__/
 *.pyc
