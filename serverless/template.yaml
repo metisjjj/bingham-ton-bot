@@ -1,0 +1,69 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Read-only, serverless survey of r/all for the "Binghampton" misspelling.
+  Polls on a schedule instead of holding an always-on connection, so it
+  runs on Lambda + DynamoDB's free tiers instead of needing a persistent
+  server.
+
+Parameters:
+  RedditClientId:
+    Type: String
+    NoEcho: true
+  RedditClientSecret:
+    Type: String
+    NoEcho: true
+  RedditUserAgent:
+    Type: String
+    Default: misspelling-survey-lambda/1.0
+  ScheduleRate:
+    Type: String
+    Default: rate(1 minute)
+    Description: How often the poller runs. More frequent = less chance of falling behind on a busy site, but more invocations.
+
+Resources:
+  SightingsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      # Provisioned mode at this size fits DynamoDB's always-free tier
+      # (25 RCU / 25 WCU / 25GB), unlike on-demand billing which has no
+      # equivalent perpetual free allowance.
+      BillingMode: PROVISIONED
+      ProvisionedThroughput:
+        ReadCapacityUnits: 2
+        WriteCapacityUnits: 2
+      AttributeDefinitions:
+        - AttributeName: pk
+          AttributeType: S
+      KeySchema:
+        - AttributeName: pk
+          KeyType: HASH
+
+  SurveyFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: survey/
+      Handler: app.handler
+      Runtime: python3.12
+      Timeout: 60
+      MemorySize: 256
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref SightingsTable
+          REDDIT_CLIENT_ID: !Ref RedditClientId
+          REDDIT_CLIENT_SECRET: !Ref RedditClientSecret
+          REDDIT_USER_AGENT: !Ref RedditUserAgent
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref SightingsTable
+      Events:
+        Poll:
+          Type: Schedule
+          Properties:
+            Schedule: !Ref ScheduleRate
+
+Outputs:
+  TableName:
+    Value: !Ref SightingsTable
+  FunctionName:
+    Value: !Ref SurveyFunction
